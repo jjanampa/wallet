@@ -1,0 +1,6 @@
+[submodule "rest"]
+	path = rest
+	url = git@github.com:jjanampa/ePayco-rest.git
+[submodule "soap"]
+	path = soap
+	url = git@github.com:jjanampa/ePayco-soap.git
