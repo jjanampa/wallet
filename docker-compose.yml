@@ -1,0 +1,79 @@
+version : '3.7'
+
+services:
+    soap:
+      build: ./.docker/soap
+      working_dir: /var/www/soap
+      volumes:
+        - ./soap:/var/www/soap:cached
+        - ./.docker/soap/php.ini:/usr/local/etc/php/conf.d/local.ini
+      networks:
+        - app-network
+
+    rest:
+      build: ./.docker/rest
+      working_dir: /var/www/rest
+      volumes:
+        - ./rest:/var/www/rest:cached
+        - ./.docker/rest/php.ini:/usr/local/etc/php/conf.d/local.ini
+      networks:
+        - app-network
+
+    nginx:
+      image: nginx:alpine
+      ports:
+        - "8000:8080"
+        - "9000:9090"
+      volumes:
+        - ./soap:/var/www/soap:cached
+        - ./rest:/var/www/rest:cached
+        - ./.docker/soap/soap.conf:/etc/nginx/conf.d/soap.conf
+        - ./.docker/rest/rest.conf:/etc/nginx/conf.d/rest.conf
+        - ./.docker/log:/var/log/nginx
+      networks:
+        app-network:
+          ipv4_address: 10.5.0.6
+
+    db:
+      image: mysql:8
+      volumes:
+        - db_data:/var/lib/mysql
+      ports:
+        - "3309:3306"
+      networks:
+        - app-network
+      command: --default-authentication-plugin=mysql_native_password
+      environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: app
+
+    redis:
+      image: 'redis:alpine'
+      ports:
+        - '6383:6379'
+      networks:
+        - app-network
+        
+    phpmyadmin:
+      image: phpmyadmin/phpmyadmin
+      depends_on:
+        - db
+      restart: always
+      ports:
+        - "8183:80"
+      environment:
+        PMA_HOST: db
+        PMA_USER: root
+        PMA_PASSWORD: root
+      networks:
+        - app-network
+
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/26
